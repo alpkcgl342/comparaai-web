@@ -2,8 +2,12 @@ import { notFound } from "next/navigation";
 import { getArticleBySlug, getImageUrl } from "@/lib/api";
 
 const IMPORTANCE_LABELS = {
-  high: {
+  kritik: {
     emoji: "🔴",
+    text: "Kritik önem",
+  },
+  high: {
+    emoji: "🟠",
     text: "Yüksek önem",
   },
   medium: {
