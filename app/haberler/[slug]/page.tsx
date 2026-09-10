@@ -1,5 +1,26 @@
 import { notFound } from "next/navigation";
-import { getArticleBySlug } from "@/lib/api";
+import { getArticleBySlug, getImageUrl } from "@/lib/api";
+
+const IMPORTANCE_LABELS = {
+  high: {
+    emoji: "🔴",
+    text: "Yüksek önem",
+  },
+  medium: {
+    emoji: "🟡",
+    text: "Orta önem",
+  },
+  low: {
+    emoji: "🟢",
+    text: "Düşük önem",
+  },
+} as const;
+
+type ImportanceKey = keyof typeof IMPORTANCE_LABELS;
+
+function isImportanceKey(value: unknown): value is ImportanceKey {
+  return typeof value === "string" && value in IMPORTANCE_LABELS;
+}
 
 type Props = {
   params: Promise<{
@@ -18,6 +39,10 @@ export default async function HaberDetayPage({
     notFound();
   }
 
+  const importance = isImportanceKey(article.aiImportance)
+    ? IMPORTANCE_LABELS[article.aiImportance]
+    : null;
+
   return (
     <main className="mx-auto max-w-4xl px-5 py-14">
       <article>
@@ -32,6 +57,19 @@ export default async function HaberDetayPage({
           {article.title}
         </h1>
 
+        {importance && (
+          <div
+            className="mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <span>{importance.emoji}</span>
+            <span>{importance.text}</span>
+          </div>
+        )}
+
         <p
           className="mt-5 text-lg leading-8"
           style={{ color: "var(--text-secondary)" }}
@@ -45,7 +83,7 @@ export default async function HaberDetayPage({
         >
           {article.imageUrl ? (
             <img
-              src={article.imageUrl}
+              src={getImageUrl(article.imageUrl)}
               alt={article.title}
               className="max-h-[560px] w-full object-cover"
             />
@@ -64,6 +102,53 @@ export default async function HaberDetayPage({
         >
           {article.content}
         </div>
+
+        {(article.aiWhyItMatters || article.aiWhoItAffects) && (
+          <div
+            className="mt-10 rounded-2xl border p-6"
+            style={{
+              background: "var(--surface)",
+              borderColor: "var(--border)",
+            }}
+          >
+            <p
+              className="text-xs font-medium"
+              style={{ color: "var(--primary)" }}
+            >
+              AI Değerlendirmesi
+            </p>
+
+            {article.aiWhyItMatters && (
+              <p
+                className="mt-3 text-sm leading-6"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                <span
+                  className="font-semibold"
+                  style={{ color: "var(--text)" }}
+                >
+                  Neden önemli:
+                </span>{" "}
+                {article.aiWhyItMatters}
+              </p>
+            )}
+
+            {article.aiWhoItAffects && (
+              <p
+                className="mt-3 text-sm leading-6"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                <span
+                  className="font-semibold"
+                  style={{ color: "var(--text)" }}
+                >
+                  Kimi etkiler:
+                </span>{" "}
+                {article.aiWhoItAffects}
+              </p>
+            )}
+          </div>
+        )}
       </article>
     </main>
   );

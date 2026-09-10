@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { getPublishedArticles } from "@/lib/api";
+import { getPublishedArticles, getImageUrl } from "@/lib/api";
+
+const IMPORTANCE_LABELS: Record<string, { text: string; emoji: string }> = {
+  dusuk: { text: "Düşük Önem", emoji: "🟢" },
+  orta: { text: "Orta Önem", emoji: "🟡" },
+  yuksek: { text: "Yüksek Önem", emoji: "🟠" },
+  kritik: { text: "Kritik Önem", emoji: "🔴" },
+};
 
 export default async function HaberlerPage() {
   const articles = await getPublishedArticles();
@@ -44,19 +51,29 @@ export default async function HaberlerPage() {
             <Link
               key={article.id}
               href={`/haberler/${article.slug}`}
-              className="overflow-hidden rounded-2xl border transition-transform hover:-translate-y-0.5"
+              className="relative overflow-hidden rounded-2xl border transition-transform hover:-translate-y-0.5"
               style={{
                 background: "var(--surface)",
                 borderColor: "var(--border)",
               }}
             >
+              {article.aiImportance && IMPORTANCE_LABELS[article.aiImportance] && (
+                <span
+                  className="absolute z-10 m-3 rounded-full px-3 py-1 text-xs font-medium"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                >
+                  {IMPORTANCE_LABELS[article.aiImportance].emoji}{" "}
+                  {IMPORTANCE_LABELS[article.aiImportance].text}
+                </span>
+              )}
+
               <div
                 className="aspect-[16/9]"
                 style={{ background: "var(--surface-soft)" }}
               >
                 {article.imageUrl ? (
                   <img
-                    src={article.imageUrl}
+                    src={getImageUrl(article.imageUrl)}
                     alt={article.title}
                     className="h-full w-full object-cover"
                   />
