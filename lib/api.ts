@@ -126,3 +126,23 @@ export function getArticleBySlug(slug: string) {
     `/articles/slug/${encodeURIComponent(slug)}`,
   );
 }
+
+// Faz 3 — AI Asistan'ın ürettiği karşılaştırma/öneri sonucunu loglar
+// (AiComparison tablosu, JWT gerektirmez — misafir kullanım).
+export async function saveComparison(data: {
+  productIds: string[];
+  scenario?: string;
+  result: unknown;
+}) {
+  const res = await fetch(`${API_URL}/comparisons`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error("Karşılaştırma kaydedilemedi.");
+  }
+
+  return res.json();
+}

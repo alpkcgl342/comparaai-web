@@ -5,6 +5,7 @@ import {
   AI_SERVICE_URL,
   getCategories,
   getProducts,
+  saveComparison,
   type Category,
   type Product,
 } from "@/lib/api";
@@ -34,6 +35,26 @@ type ParsedIntent = {
   needs_clarification: boolean;
   clarification_question: string | null;
 };
+
+// comparaai-ai'nin Product modeline eşlenir — varsa ProductAiScore'u da
+// (özellikle future_proof_score) ekler, AI bunu geleceğe dönüklük gibi
+// sorularda kullanabilsin.
+function toAiProduct(p: Product) {
+  return {
+    id: p.id,
+    name: p.name,
+    brand: p.brand,
+    specs: p.specs ?? {},
+    ai_score: p.aiScore
+      ? {
+          overall_score: p.aiScore.overallScore,
+          future_proof_score: p.aiScore.futureProofScore ?? null,
+          value_score: p.aiScore.valueScore ?? null,
+          ai_summary: p.aiScore.aiSummary ?? null,
+        }
+      : null,
+  };
+}
 
 async function callAi<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${AI_SERVICE_URL}${path}`, {
@@ -113,6 +134,7 @@ export default function AsistanPage() {
     category: Category,
     parsed: ParsedIntent,
     candidates: Product[],
+    originalMessage: string,
   ) {
     let filtered = candidates;
 
@@ -144,19 +166,21 @@ export default function AsistanPage() {
     const shortlist = filtered.slice(0, 8);
 
     const result = await callAi<{ recommendation: string }>("/recommend", {
-      products: shortlist.map((p) => ({
-        id: p.id,
-        name: p.name,
-        brand: p.brand,
-        specs: p.specs ?? {},
-      })),
+      products: shortlist.map(toAiProduct),
       priority: parsed.priority ?? undefined,
+      context: originalMessage,
     });
 
     setActiveCategory(category);
     setActiveProducts(shortlist);
     setPendingCategory(null);
     setPendingCandidates([]);
+
+    saveComparison({
+      productIds: shortlist.map((p) => p.id),
+      scenario: originalMessage,
+      result: { type: "recommend", recommendation: result.recommendation },
+    }).catch((err) => console.error("Karşılaştırma loglanamadı:", err));
 
     setMessages((m) => [
       ...m,
@@ -173,15 +197,12 @@ export default function AsistanPage() {
     setLoading(true);
 
     try {
-      // 1) Devam eden bir ürün konuşması varsa: takip sorusu.
-      if (activeCategory && activeProducts.length > 0) {
+      // 1) Devam eden bir ürün konuşması varsa (öneri VEYA isimli
+      // karşılaştırmadan gelmiş olabilir — activeCategory olmasa da olur):
+      // takip sorusu.
+      if (activeProducts.length > 0) {
         const result = await callAi<{ answer: string }>("/followup", {
-          products: activeProducts.map((p) => ({
-            id: p.id,
-            name: p.name,
-            brand: p.brand,
-            specs: p.specs ?? {},
-          })),
+          products: activeProducts.map(toAiProduct),
           question: message,
         });
 
@@ -190,6 +211,69 @@ export default function AsistanPage() {
           { role: "assistant", content: result.answer },
         ]);
         return;
+      }
+
+      // 1b) Taze bir konuşmanın ilk mesajında, kullanıcı doğrudan 2+
+      // spesifik ürün adı verdiyse ("X mi Y mi almalıyım", "A55'ten A56'ya
+      // geçmeye değer mi") bunu genel kategori akışı yerine doğrudan bir
+      // karşılaştırma olarak ele al. NOT: Bu, her yeni mesajda bir AI çağrısı
+      // (extract-entities) daha demek — ürün kataloğu büyüdükçe maliyeti
+      // gözden geçirin.
+      if (!pendingCategory) {
+        const allProducts = await getProducts();
+        if (allProducts.length >= 2) {
+          const ner = await callAi<{
+            entities: {
+              entity_type: string;
+              entity_name: string;
+              product_id: string | null;
+            }[];
+          }>("/extract-entities", {
+            title: "",
+            content: message,
+            known_products: allProducts.map((p) => ({
+              id: p.id,
+              name: p.name,
+              brand: p.brand,
+            })),
+          });
+
+          const matchedIds = Array.from(
+            new Set(
+              ner.entities
+                .filter((e) => e.entity_type === "product" && e.product_id)
+                .map((e) => e.product_id as string),
+            ),
+          );
+
+          if (matchedIds.length >= 2) {
+            const compareProducts = allProducts.filter((p) =>
+              matchedIds.includes(p.id),
+            );
+
+            const result = await callAi<{ comparison: string }>("/compare", {
+              products: compareProducts.map(toAiProduct),
+              context: message,
+            });
+
+            setActiveCategory(compareProducts[0].category ?? null);
+            setActiveProducts(compareProducts);
+
+            saveComparison({
+              productIds: compareProducts.map((p) => p.id),
+              scenario: message,
+              result: { type: "compare", comparison: result.comparison },
+            }).catch((err) =>
+              console.error("Karşılaştırma loglanamadı:", err),
+            );
+
+            setMessages((m) => [
+              ...m,
+              { role: "assistant", content: result.comparison },
+            ]);
+            return;
+          }
+        }
       }
 
       // 2) Netleştirme bekleniyorsa: aynı kategori üzerinden tekrar parse et.
@@ -219,6 +303,7 @@ export default function AsistanPage() {
           pendingCategory,
           parsed,
           pendingCandidates,
+          message,
         );
         return;
       }
@@ -275,7 +360,7 @@ export default function AsistanPage() {
         return;
       }
 
-      await recommendFromCategory(category, parsed, candidates);
+      await recommendFromCategory(category, parsed, candidates, message);
     } catch (err) {
       console.error(err);
       setMessages((m) => [
