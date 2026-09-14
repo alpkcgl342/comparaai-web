@@ -21,6 +21,20 @@ export type Category = {
   slug: string;
 };
 
+export type ProductAiScore = {
+  overallScore: number;
+  performanceScore?: number | null;
+  cameraScore?: number | null;
+  batteryScore?: number | null;
+  softwareScore?: number | null;
+  valueScore?: number | null;
+  futureProofScore?: number | null;
+  aiSummary?: string | null;
+  bestFor?: string[];
+  notFor?: string[];
+  weaknesses?: string[];
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -29,6 +43,7 @@ export type Product = {
   imageUrl?: string | null;
   specs?: Record<string, unknown>;
   category?: Category | null;
+  aiScore?: ProductAiScore | null;
 };
 
 export type Article = {
@@ -40,6 +55,9 @@ export type Article = {
   imageUrl?: string | null;
   author: string;
   isPublished: boolean;
+  aiImportance?: string | null;
+  aiWhyItMatters?: string | null;
+  aiWhoItAffects?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;

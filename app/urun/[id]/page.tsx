@@ -5,6 +5,14 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProduct } from "@/lib/api";
 
+type AiScore = {
+  overallScore: number;
+  aiSummary?: string | null;
+  bestFor?: string[];
+  notFor?: string[];
+  weaknesses?: string[];
+};
+
 type Product = {
   id: string;
   name: string;
@@ -17,6 +25,7 @@ type Product = {
     name: string;
     slug: string;
   } | null;
+  aiScore?: AiScore | null;
 };
 
 export default function ProductPage() {
@@ -218,6 +227,111 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
+
+        {/* AI Ürün Skoru */}
+        {product.aiScore && (
+          <section className="mt-10">
+            <div className="mb-5">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--primary)" }}
+              >
+                Yapay zeka değerlendirmesi
+              </p>
+
+              <h2 className="mt-1 text-2xl font-semibold">
+                AI Ürün Skoru
+              </h2>
+            </div>
+
+            <div
+              className="rounded-2xl border p-7"
+              style={{
+                background: "var(--surface)",
+                borderColor: "var(--border)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="rounded-full px-4 py-2 text-lg font-bold text-white"
+                  style={{ background: "var(--primary)" }}
+                >
+                  {Math.round(product.aiScore.overallScore)}/100
+                </span>
+              </div>
+
+              {product.aiScore.aiSummary && (
+                <p
+                  className="mt-4 text-sm leading-relaxed"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {product.aiScore.aiSummary}
+                </p>
+              )}
+
+              <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                {!!product.aiScore.bestFor?.length && (
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Kime uygun
+                    </p>
+
+                    <ul
+                      className="mt-2 list-disc space-y-1 pl-5 text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {product.aiScore.bestFor.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {!!product.aiScore.notFor?.length && (
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Kime uygun değil
+                    </p>
+
+                    <ul
+                      className="mt-2 list-disc space-y-1 pl-5 text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {product.aiScore.notFor.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {!!product.aiScore.weaknesses?.length && (
+                <div className="mt-6">
+                  <p className="text-sm font-semibold">
+                    Dikkat edilmesi gerekenler
+                  </p>
+
+                  <ul
+                    className="mt-2 list-disc space-y-1 pl-5 text-sm"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {product.aiScore.weaknesses.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <p
+                className="mt-6 text-xs"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Bu değerlendirme yapay zeka tarafından ürün özelliklerine
+                bakılarak üretilmiştir, kesin ölçüm sonucu değildir.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Tüm teknik özellikler */}
         <section className="mt-10">
