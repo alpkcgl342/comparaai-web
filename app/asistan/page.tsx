@@ -49,13 +49,25 @@ async function callAi<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+const WELCOME_MESSAGE = `Merhaba, ben ComparaAI'nin teknoloji danışmanıyım. 👋
+
+Telefon, laptop, masaüstü bilgisayar ve PC parçaları arasında karşılaştırma yapıp elimizdeki ürün verilerine dayanarak size en uygun seçeneği önerebilirim — uydurma bilgi vermem, sadece gerçekten sahip olduğumuz özelliklere göre değerlendiririm.
+
+Bana şunları söylerseniz daha isabetli bir öneri sunabilirim:
+• Bütçeniz (kesin rakam vermeseniz de "ekonomik / orta / üst segment" gibi bir fikir yeterli)
+• Ne için kullanacağınız (günlük kullanım, oyun, tasarım/video, iş vb.)
+• Sizin için en önemli özellik (kamera, batarya, performans, taşınabilirlik...)
+
+Örnek: "Öğrenci bütçesine uygun, pil ömrü uzun bir laptop arıyorum, oyun oynamayacağım."
+
+Ne aramak istersiniz?`;
+
 export default function AsistanPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content:
-        "Merhaba! Bütçenizi ve ne aradığınızı yazın, size uygun telefon/laptop önerisi sunayım. Örn: \"16 bin TL'ye kamerası iyi bir telefon istiyorum.\"",
+      content: WELCOME_MESSAGE,
     },
   ]);
   const [input, setInput] = useState("");
@@ -92,7 +104,7 @@ export default function AsistanPage() {
     setMessages([
       {
         role: "assistant",
-        content: "Yeni bir arama başlatalım — ne arıyorsunuz?",
+        content: WELCOME_MESSAGE,
       },
     ]);
   }
