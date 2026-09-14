@@ -1,4 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+export const AI_SERVICE_URL =
+  process.env.NEXT_PUBLIC_AI_SERVICE_URL || "http://localhost:8000";
 
 export function getImageUrl(imageUrl?: string | null) {
   if (!imageUrl) {
@@ -40,6 +42,7 @@ export type Product = {
   name: string;
   brand: string;
   price?: number | null;
+  segment?: string;
   imageUrl?: string | null;
   specs?: Record<string, unknown>;
   category?: Category | null;

@@ -39,31 +39,18 @@ export default function Header() {
           >
             Haberler
           </Link>
-
-          <Link
-            href="/kategori/telefon"
-            className="transition-opacity hover:opacity-70"
-          >
-            Telefon
-          </Link>
-
-          <Link
-            href="/kategori/laptop"
-            className="transition-opacity hover:opacity-70"
-          >
-            Laptop
-          </Link>
-
-          <Link
-            href="/karsilastir"
-            className="transition-opacity hover:opacity-70"
-          >
-            Karşılaştır
-          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
+
+          <Link
+            href="/asistan"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: "var(--primary)" }}
+          >
+            AI Asistan
+          </Link>
         </div>
       </div>
     </header>
