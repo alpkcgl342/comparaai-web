@@ -9,6 +9,12 @@ import {
   type Category,
   type Product,
 } from "@/lib/api";
+import {
+  EXPERTISE_LEVELS,
+  getStoredExpertiseLevel,
+  setStoredExpertiseLevel,
+  type ExpertiseLevel,
+} from "@/lib/expertiseLevel";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -93,6 +99,7 @@ export default function AsistanPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [level, setLevel] = useState<ExpertiseLevel>("normal");
 
   // Konuşma bağlamı: bir kategori üzerinde netleşince, sonraki mesajlar
   // o ürünler hakkında takip sorusu (followup) olarak değerlendirilir.
@@ -111,7 +118,13 @@ export default function AsistanPage() {
     getCategories()
       .then(setCategories)
       .catch((err) => console.error("Kategoriler alınamadı:", err));
+    setLevel(getStoredExpertiseLevel());
   }, []);
+
+  function handleLevelChange(newLevel: ExpertiseLevel) {
+    setLevel(newLevel);
+    setStoredExpertiseLevel(newLevel);
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,6 +182,7 @@ export default function AsistanPage() {
       products: shortlist.map(toAiProduct),
       priority: parsed.priority ?? undefined,
       context: originalMessage,
+      expertise_level: level,
     });
 
     setActiveCategory(category);
@@ -204,6 +218,7 @@ export default function AsistanPage() {
         const result = await callAi<{ answer: string }>("/followup", {
           products: activeProducts.map(toAiProduct),
           question: message,
+          expertise_level: level,
         });
 
         setMessages((m) => [
@@ -254,6 +269,7 @@ export default function AsistanPage() {
             const result = await callAi<{ comparison: string }>("/compare", {
               products: compareProducts.map(toAiProduct),
               context: message,
+              expertise_level: level,
             });
 
             setActiveCategory(compareProducts[0].category ?? null);
@@ -326,6 +342,7 @@ export default function AsistanPage() {
         // Kategori bulunamadı / desteklenmiyor → genel sohbet.
         const result = await callAi<{ answer: string }>("/general-chat", {
           message,
+          expertise_level: level,
         });
         setMessages((m) => [
           ...m,
@@ -394,14 +411,36 @@ export default function AsistanPage() {
           </h1>
         </div>
 
-        <button
-          type="button"
-          onClick={resetConversation}
-          className="rounded-lg border px-3 py-2 text-xs font-medium transition-opacity hover:opacity-70"
-          style={{ borderColor: "var(--border)" }}
-        >
-          Yeni sohbet
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={level}
+            onChange={(e) =>
+              handleLevelChange(e.target.value as ExpertiseLevel)
+            }
+            className="rounded-lg border px-2 py-2 text-xs font-medium outline-none"
+            style={{
+              borderColor: "var(--border)",
+              background: "var(--surface)",
+              color: "var(--text)",
+            }}
+            title="Teknik seviyeniz — cevapların ayrıntı düzeyini belirler"
+          >
+            {EXPERTISE_LEVELS.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={resetConversation}
+            className="rounded-lg border px-3 py-2 text-xs font-medium transition-opacity hover:opacity-70"
+            style={{ borderColor: "var(--border)" }}
+          >
+            Yeni sohbet
+          </button>
+        </div>
       </div>
 
       <div

@@ -146,3 +146,55 @@ export async function saveComparison(data: {
 
   return res.json();
 }
+
+// Faz 4 — Teknoloji Terimleri Sözlüğü (cache-then-serve).
+export type GlossaryTerm = {
+  id: string;
+  term: string;
+  explanationSimple?: string | null;
+  explanationNormal?: string | null;
+  explanationTechnical?: string | null;
+  explanationExpert?: string | null;
+  category?: string | null;
+  relatedTerms?: string[];
+};
+
+export async function getGlossaryTerm(
+  term: string,
+): Promise<GlossaryTerm | null> {
+  const res = await fetch(
+    `${API_URL}/glossary/${encodeURIComponent(term)}`,
+    { cache: "no-store" },
+  );
+
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Sözlük sorgusu başarısız.");
+
+  const data = await res.json();
+  return data ?? null;
+}
+
+export async function getGlossaryList(): Promise<
+  { id: string; term: string; category?: string | null }[]
+> {
+  const res = await fetch(`${API_URL}/glossary`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Sözlük listesi alınamadı.");
+  return res.json();
+}
+
+export async function saveGlossaryTerm(data: {
+  term: string;
+  level: string;
+  explanation: string;
+  category?: string;
+  relatedTerms?: string[];
+}) {
+  const res = await fetch(`${API_URL}/glossary`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) throw new Error("Sözlük terimi kaydedilemedi.");
+  return res.json();
+}

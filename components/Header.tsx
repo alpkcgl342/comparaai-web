@@ -39,6 +39,13 @@ export default function Header() {
           >
             Haberler
           </Link>
+
+          <Link
+            href="/sozluk"
+            className="transition-opacity hover:opacity-70"
+          >
+            Sözlük
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
